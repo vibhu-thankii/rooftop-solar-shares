@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import Navigation from '@/components/Navigation';
 import ProjectCard from '@/components/ProjectCard';
 import InvestmentModal from '@/components/InvestmentModal';
+import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Sun, TrendingUp, Users, Zap } from 'lucide-react';
@@ -39,7 +39,8 @@ const Home = () => {
         .from('projects')
         .select('*')
         .eq('project_status', 'active')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(6); // Show only 6 projects on home page
 
       if (error) throw error;
       setProjects(data || []);
@@ -70,20 +71,40 @@ const Home = () => {
               Join the renewable energy revolution. Invest in solar projects and earn sustainable returns
               while helping create a cleaner planet.
             </p>
-            {!user && (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/auth">
-                  <Button size="lg" variant="secondary" className="min-w-[200px]">
-                    Start Investing
-                  </Button>
-                </Link>
-                <Link to="/host">
-                  <Button size="lg" variant="outline" className="min-w-[200px] border-white text-white hover:bg-white hover:text-gray-900">
-                    Host Your Property
-                  </Button>
-                </Link>
-              </div>
-            )}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {!user ? (
+                <>
+                  <Link to="/auth">
+                    <Button size="lg" variant="secondary" className="min-w-[200px]">
+                      Start Investing
+                    </Button>
+                  </Link>
+                  <Link to="/marketplace">
+                    <Button size="lg" variant="outline" className="min-w-[200px] border-white text-white hover:bg-white hover:text-gray-900">
+                      Browse Projects
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/marketplace">
+                    <Button size="lg" variant="secondary" className="min-w-[200px]">
+                      Explore Projects
+                    </Button>
+                  </Link>
+                  <Link to="/dashboard">
+                    <Button size="lg" variant="outline" className="min-w-[200px] border-white text-white hover:bg-white hover:text-gray-900">
+                      View Dashboard
+                    </Button>
+                  </Link>
+                </>
+              )}
+              <Link to="/host">
+                <Button size="lg" variant="outline" className="min-w-[200px] border-white text-white hover:bg-white hover:text-gray-900">
+                  Host Your Property
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -141,22 +162,32 @@ const Home = () => {
             <p className="mt-2 text-gray-600">Loading projects...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {projects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onInvest={(project) => {
-                  if (!user) {
-                    // Redirect to auth if not logged in
-                    window.location.href = '/auth';
-                    return;
-                  }
-                  setSelectedProject(project);
-                }}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {projects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onInvest={(project) => {
+                    if (!user) {
+                      // Redirect to auth if not logged in
+                      window.location.href = '/auth';
+                      return;
+                    }
+                    setSelectedProject(project);
+                  }}
+                />
+              ))}
+            </div>
+            
+            <div className="text-center mt-12">
+              <Link to="/marketplace">
+                <Button size="lg" variant="outline">
+                  View All Projects
+                </Button>
+              </Link>
+            </div>
+          </>
         )}
 
         {projects.length === 0 && !loading && (
@@ -231,6 +262,8 @@ const Home = () => {
           </div>
         </div>
       </div>
+
+      <Footer />
 
       <InvestmentModal
         project={selectedProject}

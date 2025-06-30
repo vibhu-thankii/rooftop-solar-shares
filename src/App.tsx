@@ -10,6 +10,9 @@ import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Host from "./pages/Host";
+import Marketplace from "./pages/Marketplace";
+import Portfolio from "./pages/Portfolio";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,9 +62,20 @@ const AppRoutes = () => {
           <Auth />
         </AuthRedirect>
       } />
+      <Route path="/marketplace" element={<Marketplace />} />
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <Dashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/portfolio" element={
+        <ProtectedRoute>
+          <Portfolio />
+        </ProtectedRoute>
+      } />
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <Profile />
         </ProtectedRoute>
       } />
       <Route path="/host" element={<Host />} />

@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
 
 const Host = () => {
   const [formData, setFormData] = useState({
@@ -181,6 +182,8 @@ const Host = () => {
           </CardContent>
         </Card>
       </div>
+      
+      <Footer />
     </div>
   );
 };
