@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Calculator, DollarSign, TrendingUp, Calendar } from 'lucide-react';
+import { Calculator, DollarSign, TrendingUp, Calendar, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Project {
   id: string;
@@ -36,6 +37,7 @@ const InvestmentModal = ({ project, isOpen, onClose, onSuccess }: InvestmentModa
   const { user } = useAuth();
   const [shares, setShares] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!project) return null;
 
@@ -45,38 +47,56 @@ const InvestmentModal = ({ project, isOpen, onClose, onSuccess }: InvestmentModa
   const expectedAnnualReturn = totalInvestment * (project.expected_roi / 100);
   const expectedMonthlyReturn = expectedAnnualReturn / 12;
 
-  const handleInvestment = async () => {
+  const validateInvestment = () => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to make an investment.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (shares > availableShares) {
-      toast({
-        title: "Insufficient shares",
-        description: `Only ${availableShares} shares are available.`,
-        variant: "destructive",
-      });
-      return;
+      setError("Please sign in to make an investment.");
+      return false;
     }
 
     if (shares < 1) {
-      toast({
-        title: "Invalid amount",
-        description: "Please select at least 1 share.",
-        variant: "destructive",
-      });
-      return;
+      setError("Please select at least 1 share.");
+      return false;
     }
+
+    if (shares > availableShares) {
+      setError(`Only ${availableShares} shares are available.`);
+      return false;
+    }
+
+    if (totalInvestment < project.price_per_share) {
+      setError(`Minimum investment is ₹${project.price_per_share.toLocaleString()}.`);
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleInvestment = async () => {
+    setError(null);
+    
+    if (!validateInvestment()) return;
 
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      // First, check if shares are still available (race condition prevention)
+      const { data: currentProject, error: fetchError } = await supabase
+        .from('projects')
+        .select('sold_shares, available_shares')
+        .eq('id', project.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentSoldShares = currentProject.sold_shares || 0;
+      const currentAvailableShares = currentProject.available_shares - currentSoldShares;
+
+      if (shares > currentAvailableShares) {
+        throw new Error(`Only ${currentAvailableShares} shares are currently available.`);
+      }
+
+      // Create the investment record
+      const { error: investmentError } = await supabase
         .from('investments')
         .insert({
           user_id: user.id,
@@ -87,15 +107,17 @@ const InvestmentModal = ({ project, isOpen, onClose, onSuccess }: InvestmentModa
           payment_status: 'completed'
         });
 
-      if (error) throw error;
+      if (investmentError) throw investmentError;
 
-      // Update project sold shares
+      // Create a success notification
       await supabase
-        .from('projects')
-        .update({ 
-          sold_shares: soldShares + shares 
-        })
-        .eq('id', project.id);
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          title: 'Investment Successful!',
+          message: `You have successfully invested ₹${totalInvestment.toLocaleString()} in ${project.title}. You purchased ${shares} shares.`,
+          type: 'success'
+        });
 
       toast({
         title: "Investment successful!",
@@ -105,7 +127,10 @@ const InvestmentModal = ({ project, isOpen, onClose, onSuccess }: InvestmentModa
       onSuccess();
       onClose();
       setShares(1);
+      setError(null);
     } catch (error: any) {
+      console.error('Investment error:', error);
+      setError(error.message);
       toast({
         title: "Investment failed",
         description: error.message,
@@ -116,6 +141,13 @@ const InvestmentModal = ({ project, isOpen, onClose, onSuccess }: InvestmentModa
     }
   };
 
+  const handleSharesChange = (value: string) => {
+    const numValue = parseInt(value) || 1;
+    const clampedValue = Math.max(1, Math.min(numValue, availableShares));
+    setShares(clampedValue);
+    setError(null);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
@@ -124,6 +156,13 @@ const InvestmentModal = ({ project, isOpen, onClose, onSuccess }: InvestmentModa
         </DialogHeader>
 
         <div className="space-y-6">
+          {error && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
             <img
               src={project.image_url || '/placeholder.svg'}
@@ -164,7 +203,7 @@ const InvestmentModal = ({ project, isOpen, onClose, onSuccess }: InvestmentModa
                 min="1"
                 max={availableShares}
                 value={shares}
-                onChange={(e) => setShares(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => handleSharesChange(e.target.value)}
                 className="mt-1"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -210,12 +249,12 @@ const InvestmentModal = ({ project, isOpen, onClose, onSuccess }: InvestmentModa
           </div>
 
           <div className="flex space-x-3">
-            <Button variant="outline" onClick={onClose} className="flex-1">
+            <Button variant="outline" onClick={onClose} className="flex-1" disabled={loading}>
               Cancel
             </Button>
             <Button 
               onClick={handleInvestment} 
-              disabled={loading || shares > availableShares}
+              disabled={loading || shares > availableShares || !!error}
               className="flex-1"
             >
               {loading ? 'Processing...' : `Invest ₹${totalInvestment.toLocaleString()}`}

@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { MapPin, Zap, TrendingUp, Calendar } from 'lucide-react';
+import { MapPin, Zap, TrendingUp, Calendar, Leaf, Shield } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -18,6 +18,10 @@ interface Project {
   expected_roi: number;
   image_url: string;
   installation_date?: string;
+  project_status?: string;
+  energy_output_kwh_year?: number;
+  carbon_offset_kg_year?: number;
+  warranty_years?: number;
 }
 
 interface ProjectCardProps {
@@ -29,6 +33,15 @@ const ProjectCard = ({ project, onInvest }: ProjectCardProps) => {
   const soldShares = project.sold_shares || 0;
   const progressPercentage = (soldShares / project.available_shares) * 100;
   const isFullyFunded = soldShares >= project.available_shares;
+  const isActive = project.project_status === 'active';
+
+  const getStatusBadge = () => {
+    if (isFullyFunded) return { variant: "secondary" as const, text: "Fully Funded" };
+    if (!isActive) return { variant: "destructive" as const, text: "Inactive" };
+    return { variant: "default" as const, text: "Available" };
+  };
+
+  const statusBadge = getStatusBadge();
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
@@ -39,10 +52,18 @@ const ProjectCard = ({ project, onInvest }: ProjectCardProps) => {
           className="w-full h-full object-cover"
         />
         <div className="absolute top-4 right-4">
-          <Badge variant={isFullyFunded ? "secondary" : "default"}>
-            {isFullyFunded ? "Fully Funded" : "Available"}
+          <Badge variant={statusBadge.variant}>
+            {statusBadge.text}
           </Badge>
         </div>
+        {project.carbon_offset_kg_year && (
+          <div className="absolute bottom-4 left-4">
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <Leaf className="h-3 w-3 mr-1" />
+              {project.carbon_offset_kg_year}kg CO₂/year
+            </Badge>
+          </div>
+        )}
       </div>
 
       <CardHeader className="pb-3">
@@ -69,6 +90,9 @@ const ProjectCard = ({ project, onInvest }: ProjectCardProps) => {
             <div>
               <p className="text-gray-600">Capacity</p>
               <p className="font-medium">{project.capacity_kw} kW</p>
+              {project.energy_output_kwh_year && (
+                <p className="text-xs text-gray-500">{project.energy_output_kwh_year.toLocaleString()} kWh/year</p>
+              )}
             </div>
           </div>
           <div className="flex items-center">
@@ -80,6 +104,13 @@ const ProjectCard = ({ project, onInvest }: ProjectCardProps) => {
           </div>
         </div>
 
+        {project.warranty_years && (
+          <div className="flex items-center text-sm text-gray-600">
+            <Shield className="h-4 w-4 mr-2 text-blue-500" />
+            <span>{project.warranty_years} year warranty</span>
+          </div>
+        )}
+
         {project.installation_date && (
           <div className="flex items-center text-sm text-gray-600">
             <Calendar className="h-4 w-4 mr-2" />
@@ -90,7 +121,7 @@ const ProjectCard = ({ project, onInvest }: ProjectCardProps) => {
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span>Funding Progress</span>
-            <span>{soldShares}/{project.available_shares} shares</span>
+            <span>{soldShares.toLocaleString()}/{project.available_shares.toLocaleString()} shares</span>
           </div>
           <Progress value={progressPercentage} className="h-2" />
           <p className="text-xs text-gray-600">
@@ -104,9 +135,9 @@ const ProjectCard = ({ project, onInvest }: ProjectCardProps) => {
             e.stopPropagation();
             onInvest(project);
           }}
-          disabled={isFullyFunded}
+          disabled={isFullyFunded || !isActive}
         >
-          {isFullyFunded ? "Fully Funded" : "Invest Now"}
+          {isFullyFunded ? "Fully Funded" : !isActive ? "Not Available" : "Invest Now"}
         </Button>
       </CardContent>
     </Card>

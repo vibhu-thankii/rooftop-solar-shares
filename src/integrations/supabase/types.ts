@@ -60,9 +60,11 @@ export type Database = {
           created_at: string
           id: string
           investment_date: string
+          last_return_date: string | null
           payment_status: string | null
           project_id: string
           razorpay_payment_id: string | null
+          returns_to_date: number | null
           shares_purchased: number
           user_id: string
         }
@@ -71,9 +73,11 @@ export type Database = {
           created_at?: string
           id?: string
           investment_date?: string
+          last_return_date?: string | null
           payment_status?: string | null
           project_id: string
           razorpay_payment_id?: string | null
+          returns_to_date?: number | null
           shares_purchased: number
           user_id: string
         }
@@ -82,9 +86,11 @@ export type Database = {
           created_at?: string
           id?: string
           investment_date?: string
+          last_return_date?: string | null
           payment_status?: string | null
           project_id?: string
           razorpay_payment_id?: string | null
+          returns_to_date?: number | null
           shares_purchased?: number
           user_id?: string
         }
@@ -97,6 +103,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       portfolio_performance: {
         Row: {
@@ -128,6 +164,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          email: string | null
           first_name: string | null
           id: string
           is_admin: boolean | null
@@ -138,6 +175,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email?: string | null
           first_name?: string | null
           id?: string
           is_admin?: boolean | null
@@ -148,6 +186,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email?: string | null
           first_name?: string | null
           id?: string
           is_admin?: boolean | null
@@ -158,57 +197,104 @@ export type Database = {
         }
         Relationships: []
       }
+      project_updates: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          project_id: string
+          title: string
+          update_type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          project_id: string
+          title: string
+          update_type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          project_id?: string
+          title?: string
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_updates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           available_shares: number
           capacity_kw: number
+          carbon_offset_kg_year: number | null
           created_at: string
           description: string | null
+          energy_output_kwh_year: number | null
           expected_roi: number | null
           id: string
           image_url: string | null
           installation_date: string | null
           location: string
+          maintenance_fee_annual: number | null
           price_per_share: number
           project_status: string | null
           sold_shares: number | null
           title: string
           total_cost: number
           updated_at: string
+          warranty_years: number | null
         }
         Insert: {
           available_shares: number
           capacity_kw: number
+          carbon_offset_kg_year?: number | null
           created_at?: string
           description?: string | null
+          energy_output_kwh_year?: number | null
           expected_roi?: number | null
           id?: string
           image_url?: string | null
           installation_date?: string | null
           location: string
+          maintenance_fee_annual?: number | null
           price_per_share: number
           project_status?: string | null
           sold_shares?: number | null
           title: string
           total_cost: number
           updated_at?: string
+          warranty_years?: number | null
         }
         Update: {
           available_shares?: number
           capacity_kw?: number
+          carbon_offset_kg_year?: number | null
           created_at?: string
           description?: string | null
+          energy_output_kwh_year?: number | null
           expected_roi?: number | null
           id?: string
           image_url?: string | null
           installation_date?: string | null
           location?: string
+          maintenance_fee_annual?: number | null
           price_per_share?: number
           project_status?: string | null
           sold_shares?: number | null
           title?: string
           total_cost?: number
           updated_at?: string
+          warranty_years?: number | null
         }
         Relationships: []
       }
