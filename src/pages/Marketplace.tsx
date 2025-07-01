@@ -1,13 +1,13 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import Navigation from '@/components/Navigation';
 import ProjectCard from '@/components/ProjectCard';
 import ProjectDetails from '@/components/ProjectDetails';
 import SearchAndFilter from '@/components/SearchAndFilter';
 import InvestmentModal from '@/components/InvestmentModal';
 import ReturnsCalculator from '@/components/ReturnsCalculator';
+import { useProjects } from '@/hooks/useProjects';
 
 interface Project {
   id: string;
@@ -22,6 +22,10 @@ interface Project {
   expected_roi: number;
   image_url: string;
   installation_date?: string;
+  project_status?: string;
+  energy_output_kwh_year?: number;
+  carbon_offset_kg_year?: number;
+  warranty_years?: number;
 }
 
 interface FilterOptions {
@@ -34,76 +38,20 @@ interface FilterOptions {
 
 const Marketplace = () => {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
+  const [filters, setFilters] = useState<FilterOptions>({
+    search: '',
+    location: '',
+    minROI: '',
+    maxInvestment: '',
+    status: ''
+  });
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [investmentProject, setInvestmentProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
+  const { projects, loading, refetch } = useProjects(filters);
 
-  const fetchProjects = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('project_status', 'active')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setProjects(data || []);
-      setFilteredProjects(data || []);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFiltersChange = (filters: FilterOptions) => {
-    let filtered = [...projects];
-
-    if (filters.search) {
-      filtered = filtered.filter(project =>
-        project.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        project.description?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        project.location.toLowerCase().includes(filters.search.toLowerCase())
-      );
-    }
-
-    if (filters.location) {
-      filtered = filtered.filter(project =>
-        project.location.toLowerCase().includes(filters.location.toLowerCase())
-      );
-    }
-
-    if (filters.minROI) {
-      filtered = filtered.filter(project =>
-        (project.expected_roi || 0) >= parseFloat(filters.minROI)
-      );
-    }
-
-    if (filters.maxInvestment) {
-      filtered = filtered.filter(project =>
-        project.price_per_share <= parseFloat(filters.maxInvestment)
-      );
-    }
-
-    if (filters.status) {
-      if (filters.status === 'funded') {
-        filtered = filtered.filter(project =>
-          (project.sold_shares || 0) >= project.available_shares
-        );
-      } else if (filters.status === 'active') {
-        filtered = filtered.filter(project =>
-          (project.sold_shares || 0) < project.available_shares
-        );
-      }
-    }
-
-    setFilteredProjects(filtered);
+  const handleFiltersChange = (newFilters: FilterOptions) => {
+    setFilters(newFilters);
   };
 
   const handleProjectClick = (project: Project) => {
@@ -120,7 +68,7 @@ const Marketplace = () => {
   };
 
   const handleInvestmentSuccess = () => {
-    fetchProjects();
+    refetch();
   };
 
   return (
@@ -138,7 +86,11 @@ const Marketplace = () => {
         </div>
 
         <div className="mb-6">
-          <SearchAndFilter onFiltersChange={handleFiltersChange} />
+          <SearchAndFilter 
+            onFiltersChange={handleFiltersChange} 
+            resultsCount={projects.length}
+            loading={loading}
+          />
         </div>
 
         {loading ? (
@@ -146,14 +98,14 @@ const Marketplace = () => {
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
             <p className="mt-2 text-gray-600">Loading projects...</p>
           </div>
-        ) : filteredProjects.length === 0 ? (
+        ) : projects.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-600">No projects match your criteria.</p>
             <p className="text-sm text-gray-500 mt-2">Try adjusting your filters or search terms.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProjects.map((project) => (
+            {projects.map((project) => (
               <div key={project.id} onClick={() => handleProjectClick(project)} className="cursor-pointer">
                 <ProjectCard
                   project={project}

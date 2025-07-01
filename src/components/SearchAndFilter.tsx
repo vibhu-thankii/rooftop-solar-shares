@@ -27,7 +27,7 @@ const SearchAndFilter = ({ onFiltersChange, resultsCount, loading }: SearchAndFi
     location: '',
     minROI: '',
     maxInvestment: '',
-    status: ''
+    status: 'all'
   });
 
   const handleFilterChange = (key: keyof FilterOptions, value: string) => {
@@ -42,13 +42,15 @@ const SearchAndFilter = ({ onFiltersChange, resultsCount, loading }: SearchAndFi
       location: '',
       minROI: '',
       maxInvestment: '',
-      status: ''
+      status: 'all'
     };
     setFilters(emptyFilters);
     onFiltersChange(emptyFilters);
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => value !== '');
+  const hasActiveFilters = Object.entries(filters).some(([key, value]) => 
+    key !== 'status' ? value !== '' : value !== 'all'
+  );
 
   return (
     <Card>
@@ -59,7 +61,11 @@ const SearchAndFilter = ({ onFiltersChange, resultsCount, loading }: SearchAndFi
               <Filter className="h-5 w-5 text-gray-500" />
               <h3 className="font-semibold">Filter Projects</h3>
               {hasActiveFilters && (
-                <Badge variant="outline">{Object.values(filters).filter(v => v !== '').length} active</Badge>
+                <Badge variant="outline">
+                  {Object.entries(filters).filter(([key, value]) => 
+                    key !== 'status' ? value !== '' : value !== 'all'
+                  ).length} active
+                </Badge>
               )}
             </div>
             {typeof resultsCount === 'number' && (
@@ -120,7 +126,7 @@ const SearchAndFilter = ({ onFiltersChange, resultsCount, loading }: SearchAndFi
                   <SelectValue placeholder="All projects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Projects</SelectItem>
+                  <SelectItem value="all">All Projects</SelectItem>
                   <SelectItem value="active">Available</SelectItem>
                   <SelectItem value="funded">Fully Funded</SelectItem>
                 </SelectContent>
