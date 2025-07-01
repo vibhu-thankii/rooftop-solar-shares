@@ -11,10 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Users, Building, TrendingUp, AlertCircle, Eye, Check, X, Plus } from 'lucide-react';
+import { Users, Building, TrendingUp, AlertCircle, Check, X, Plus } from 'lucide-react';
 
 const Admin = () => {
   const { user } = useAuth();
@@ -260,7 +259,6 @@ const Admin = () => {
                       <TableHead>Property Type</TableHead>
                       <TableHead>Location</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Image</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -278,18 +276,6 @@ const Admin = () => {
                           }>
                             {application.application_status}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {application.property_image_url ? (
-                            <img 
-                              src={application.property_image_url} 
-                              alt="Property" 
-                              className="w-16 h-16 object-cover rounded cursor-pointer"
-                              onClick={() => window.open(application.property_image_url, '_blank')}
-                            />
-                          ) : (
-                            <span className="text-gray-400">No image</span>
-                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
